@@ -216,7 +216,7 @@ void VarTable::loadFromFile() {
         string temp;
         type = "";
         while (iss >> temp) {
-            if (value.empty() && (temp == "int" || temp == "float" || temp.find("array") == 0)) {
+            if (value.empty() && (temp == "int" || temp == "float" || temp.find("array") == 0 || temp == "-")) {
                 type = temp;
             }
             else {

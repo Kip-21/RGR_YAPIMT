@@ -42,12 +42,17 @@ void executePoliz(const vector<string>& poliz, VarTable& varTable) {
                 cout << "\033[1;33m[RUNTIME WARNING] Array index out of bounds (" << idx << ") for array '" << arrayName << "'. Correcting to 0.\033[0m\n";
                 idx = 0;
             } else if ((size_t)idx >= arrAttr.array_size) {
-                cout << "\033[1;33m[RUNTIME WARNING] Array index out of bounds (" << idx << ") for array '" << arrayName << "'. Correcting to " << (arrAttr.array_size - 1) << ".\033[0m\n";
-                idx = arrAttr.array_size - 1;
+                int corrected_idx = arrAttr.array_size > 0 ? arrAttr.array_size - 1 : 0;
+                cout << "\033[1;33m[RUNTIME WARNING] Array index out of bounds (" << idx << ") for array '" << arrayName << "'. Correcting to " << corrected_idx << ".\033[0m\n";
+                idx = corrected_idx;
             }
             
-            string val = arrAttr.array_values[idx];
-            runtimeStack.push(val);
+            if (arrAttr.array_values.empty()) {
+                runtimeStack.push("0");
+            } else {
+                string val = arrAttr.array_values[idx];
+                runtimeStack.push(val);
+            }
         }
         else if (token == "ЧТЕНИЕ") {
             if (runtimeStack.empty()) throw runtime_error("Runtime Error: Stack underflow for ЧТЕНИЕ");
