@@ -1,0 +1,2 @@
+int small[1];
+small[999] = 5;

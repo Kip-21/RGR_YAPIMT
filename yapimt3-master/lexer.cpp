@@ -22,6 +22,7 @@ vector<Token> tokenizeFile(const string& filepath, const ConstTable& alphabet, c
     size_t current_line = 1;
     size_t current_col = 0;
     size_t start_col = 0;
+    char last_significant_char = '\0';
 
     auto isSafeBreak = [&](char ch) {
         return ch == ' ' || ch == '\t' || ch == '\r' || ch == '\n' ||
@@ -122,7 +123,30 @@ vector<Token> tokenizeFile(const string& filepath, const ConstTable& alphabet, c
                 }
                 else if (isalpha((unsigned char)c)) { buffer = c; start_col = current_col; state = State::IN_ID; }
                 else if (isdigit((unsigned char)c)) { buffer = c; start_col = current_col; state = State::IN_NUMBER; }
-                else if (c == '=' || c == '!' || c == '<' || c == '>' || c == '+' || c == '-' || c == '*') { buffer = c; start_col = current_col; state = State::IN_OPERATOR; }
+                else if (c == '-' || c == '+') {
+                    bool is_sign = (last_significant_char == '\0' || 
+                                    string("=[({,;<>&|!*/+-").find(last_significant_char) != string::npos);
+                    if (is_sign) {
+                        char next_c;
+                        if (file.get(next_c)) {
+                            if (isdigit((unsigned char)next_c)) {
+                                buffer = c;
+                                buffer += next_c;
+                                start_col = current_col;
+                                current_col++;
+                                state = State::IN_NUMBER;
+                            } else {
+                                file.unget();
+                                buffer = c; start_col = current_col; state = State::IN_OPERATOR;
+                            }
+                        } else {
+                            buffer = c; start_col = current_col; state = State::IN_OPERATOR;
+                        }
+                    } else {
+                        buffer = c; start_col = current_col; state = State::IN_OPERATOR;
+                    }
+                }
+                else if (c == '=' || c == '!' || c == '<' || c == '>' || c == '*') { buffer = c; start_col = current_col; state = State::IN_OPERATOR; }
                 else if (delimiters.contains(string(1, c))) {
                     int index = delimiters.getIndex(string(1, c));
                     tokens.push_back({ TokenType::DELIMITER, (size_t)(index < 0 ? 0 : index), current_line, current_col });
@@ -185,6 +209,9 @@ vector<Token> tokenizeFile(const string& filepath, const ConstTable& alphabet, c
                 break;
             }
             }
+        }
+        if (!isspace((unsigned char)c) && state != State::IN_COMMENT) {
+            last_significant_char = c;
         }
     }
 

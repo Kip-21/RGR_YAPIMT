@@ -1,0 +1,6 @@
+int z;
+read(z);
+int w;
+read(w);
+int q;
+read(q);

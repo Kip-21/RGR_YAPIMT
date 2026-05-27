@@ -1,0 +1,4 @@
+/* Тест 3: Чтение за пределами файла (Default Value Substitution) */
+/* Предполагается, что файл data.txt пуст или мы его дочитали до конца */
+int input_val;
+read(input_val);

@@ -11,6 +11,7 @@ using namespace std;
 void executePoliz(const vector<string>& poliz, VarTable& varTable) {
     stack<string> runtimeStack;
     ifstream inFile("data.txt");
+    ofstream errOut("output/errors.txt", ios::app);
     
     auto isNumeric = [](const string& s) {
         if (s.empty()) return false;
@@ -38,16 +39,23 @@ void executePoliz(const vector<string>& poliz, VarTable& varTable) {
             }
             
             auto arrAttr = varTable.getAttributes(arrayName);
+            if (arrAttr.array_size == 0) {
+                cout << "\033[1;33m[RUNTIME WARNING] Array '" << arrayName << "' is empty or uninitialized. Returning default value 0.\033[0m\n";
+                errOut << "[RUNTIME WARNING] Array '" << arrayName << "' is empty or uninitialized. Returning default value 0.\n";
+                runtimeStack.push("0");
+                continue;
+            }
             if (idx < 0) {
                 cout << "\033[1;33m[RUNTIME WARNING] Array index out of bounds (" << idx << ") for array '" << arrayName << "'. Correcting to 0.\033[0m\n";
+                errOut << "[RUNTIME WARNING] Array index out of bounds (" << idx << ") for array '" << arrayName << "'. Correcting to 0.\n";
                 idx = 0;
             } else if ((size_t)idx >= arrAttr.array_size) {
                 cout << "\033[1;33m[RUNTIME WARNING] Array index out of bounds (" << idx << ") for array '" << arrayName << "'. Correcting to " << (arrAttr.array_size - 1) << ".\033[0m\n";
+                errOut << "[RUNTIME WARNING] Array index out of bounds (" << idx << ") for array '" << arrayName << "'. Correcting to " << (arrAttr.array_size - 1) << ".\n";
                 idx = arrAttr.array_size - 1;
             }
             
-            string val = arrAttr.array_values[idx];
-            runtimeStack.push(val);
+            runtimeStack.push(arrayName + "[" + to_string(idx) + "]");
         }
         else if (token == "ЧТЕНИЕ") {
             if (runtimeStack.empty()) throw runtime_error("Runtime Error: Stack underflow for ЧТЕНИЕ");
@@ -59,6 +67,7 @@ void executePoliz(const vector<string>& poliz, VarTable& varTable) {
                 varTable.update(varName, attr);
             } else {
                 cout << "\033[1;33m[RUNTIME WARNING] Attempt to read beyond EOF from data.txt. Correcting by assigning 0 to '" << varName << "'.\033[0m\n";
+                errOut << "[RUNTIME WARNING] Attempt to read beyond EOF from data.txt. Correcting by assigning 0 to '" << varName << "'.\n";
                 auto attr = varTable.getAttributes(varName);
                 attr.value = "0";
                 varTable.update(varName, attr);
@@ -71,6 +80,18 @@ void executePoliz(const vector<string>& poliz, VarTable& varTable) {
             
             auto resolveVal = [&](const string& s) -> double {
                 if (isNumeric(s)) return stod(s);
+                if (s.find('[') != string::npos) {
+                    size_t bracketPos = s.find('[');
+                    string arrName = s.substr(0, bracketPos);
+                    int idx = stoi(s.substr(bracketPos + 1, s.size() - bracketPos - 2));
+                    auto attr = varTable.getAttributes(arrName);
+                    if (idx >= 0 && (size_t)idx < attr.array_values.size()) {
+                        string val = attr.array_values[idx];
+                        if (val == "-") throw runtime_error("Runtime Error: Uninitialized array element '" + s + "'");
+                        return stod(val);
+                    }
+                    return 0;
+                }
                 auto attr = varTable.getAttributes(s);
                 if (attr.value == "-") throw runtime_error("Runtime Error: Uninitialized variable '" + s + "'");
                 return stod(attr.value);
@@ -93,31 +114,39 @@ void executePoliz(const vector<string>& poliz, VarTable& varTable) {
                 if (token == "+") {
                     if (rl > 0 && ll > INT_MAX - rl) {
                         cout << "\033[1;33m[RUNTIME WARNING] Integer Overflow (+). Correcting to INT_MAX.\033[0m\n";
+                        errOut << "[RUNTIME WARNING] Integer Overflow (+). Correcting to INT_MAX.\n";
                         runtimeStack.push(to_string(INT_MAX)); continue;
                     } else if (rl < 0 && ll < INT_MIN - rl) {
                         cout << "\033[1;33m[RUNTIME WARNING] Integer Underflow (+). Correcting to INT_MIN.\033[0m\n";
+                        errOut << "[RUNTIME WARNING] Integer Underflow (+). Correcting to INT_MIN.\n";
                         runtimeStack.push(to_string(INT_MIN)); continue;
                     }
                 } else if (token == "*") {
                     if (rl > 0 && ll > 0 && ll > INT_MAX / rl) {
                         cout << "\033[1;33m[RUNTIME WARNING] Integer Overflow (*). Correcting to INT_MAX.\033[0m\n";
+                        errOut << "[RUNTIME WARNING] Integer Overflow (*). Correcting to INT_MAX.\n";
                         runtimeStack.push(to_string(INT_MAX)); continue;
                     } else if (rl < 0 && ll < 0 && ll < INT_MAX / rl) {
                         cout << "\033[1;33m[RUNTIME WARNING] Integer Overflow (*). Correcting to INT_MAX.\033[0m\n";
+                        errOut << "[RUNTIME WARNING] Integer Overflow (*). Correcting to INT_MAX.\n";
                         runtimeStack.push(to_string(INT_MAX)); continue;
                     } else if (rl > 0 && ll < 0 && ll < INT_MIN / rl) {
                         cout << "\033[1;33m[RUNTIME WARNING] Integer Underflow (*). Correcting to INT_MIN.\033[0m\n";
+                        errOut << "[RUNTIME WARNING] Integer Underflow (*). Correcting to INT_MIN.\n";
                         runtimeStack.push(to_string(INT_MIN)); continue;
                     } else if (rl < 0 && ll > 0 && ll > INT_MIN / rl) {
                         cout << "\033[1;33m[RUNTIME WARNING] Integer Underflow (*). Correcting to INT_MIN.\033[0m\n";
+                        errOut << "[RUNTIME WARNING] Integer Underflow (*). Correcting to INT_MIN.\n";
                         runtimeStack.push(to_string(INT_MIN)); continue;
                     }
                 } else if (token == "-") {
                     if (rl < 0 && ll > INT_MAX + rl) {
                         cout << "\033[1;33m[RUNTIME WARNING] Integer Overflow (-). Correcting to INT_MAX.\033[0m\n";
+                        errOut << "[RUNTIME WARNING] Integer Overflow (-). Correcting to INT_MAX.\n";
                         runtimeStack.push(to_string(INT_MAX)); continue;
                     } else if (rl > 0 && ll < INT_MIN + rl) {
                         cout << "\033[1;33m[RUNTIME WARNING] Integer Underflow (-). Correcting to INT_MIN.\033[0m\n";
+                        errOut << "[RUNTIME WARNING] Integer Underflow (-). Correcting to INT_MIN.\n";
                         runtimeStack.push(to_string(INT_MIN)); continue;
                     }
                 }
@@ -138,6 +167,18 @@ void executePoliz(const vector<string>& poliz, VarTable& varTable) {
             
             auto resolveVal = [&](const string& s) -> double {
                 if (isNumeric(s)) return stod(s);
+                if (s.find('[') != string::npos) {
+                    size_t bracketPos = s.find('[');
+                    string arrName = s.substr(0, bracketPos);
+                    int idx = stoi(s.substr(bracketPos + 1, s.size() - bracketPos - 2));
+                    auto attr = varTable.getAttributes(arrName);
+                    if (idx >= 0 && (size_t)idx < attr.array_values.size()) {
+                        string val = attr.array_values[idx];
+                        if (val == "-") throw runtime_error("Runtime Error: Uninitialized array element '" + s + "'");
+                        return stod(val);
+                    }
+                    return 0;
+                }
                 auto attr = varTable.getAttributes(s);
                 if (attr.value == "-") throw runtime_error("Runtime Error: Uninitialized variable '" + s + "'");
                 return stod(attr.value);
@@ -160,13 +201,44 @@ void executePoliz(const vector<string>& poliz, VarTable& varTable) {
             string varName = runtimeStack.top(); runtimeStack.pop();
             
             string resolvedVal = valStr;
-            if (!isNumeric(valStr) && varTable.contains(valStr)) {
-                resolvedVal = varTable.getAttributes(valStr).value;
+            if (!isNumeric(valStr)) {
+                if (valStr.find('[') != string::npos) {
+                    size_t bracketPos = valStr.find('[');
+                    string arrName = valStr.substr(0, bracketPos);
+                    int idx = stoi(valStr.substr(bracketPos + 1, valStr.size() - bracketPos - 2));
+                    auto attr = varTable.getAttributes(arrName);
+                    if (idx >= 0 && (size_t)idx < attr.array_values.size()) {
+                        resolvedVal = attr.array_values[idx];
+                    } else {
+                        resolvedVal = "0";
+                    }
+                } else if (varTable.contains(valStr)) {
+                    resolvedVal = varTable.getAttributes(valStr).value;
+                }
             }
             
-            auto attr = varTable.getAttributes(varName);
-            attr.value = resolvedVal;
-            varTable.update(varName, attr);
+            if (varName.find('[') != string::npos) {
+                size_t bracketPos = varName.find('[');
+                string arrName = varName.substr(0, bracketPos);
+                int idx = stoi(varName.substr(bracketPos + 1, varName.size() - bracketPos - 2));
+                auto attr = varTable.getAttributes(arrName);
+                if ((size_t)idx >= attr.array_values.size()) attr.array_values.resize(idx + 1, "0");
+                attr.array_values[idx] = resolvedVal;
+                
+                string newVal = "[";
+                for (size_t i = 0; i < attr.array_values.size(); ++i) {
+                    newVal += attr.array_values[i];
+                    if (i < attr.array_values.size() - 1) newVal += ", ";
+                }
+                newVal += "]";
+                attr.value = newVal;
+                
+                varTable.update(arrName, attr);
+            } else {
+                auto attr = varTable.getAttributes(varName);
+                attr.value = resolvedVal;
+                varTable.update(varName, attr);
+            }
         }
         else {
             runtimeStack.push(token);

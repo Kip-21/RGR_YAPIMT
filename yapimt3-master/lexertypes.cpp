@@ -2,6 +2,7 @@
 #include <sstream>
 
 void LexemeAttributes::updateArrayData() {
+    size_t old_size = array_size;
     array_size = 0;
     array_values.clear();
     if ((type == "array<int>" || type == "array<float>") && !value.empty() && value.front() == '[' && value.back() == ']') {
@@ -17,6 +18,11 @@ void LexemeAttributes::updateArrayData() {
                 }
             }
         }
-        array_size = array_values.size();
+        if (array_values.empty() && old_size > 0) {
+            array_size = old_size;
+            array_values.resize(old_size, "0");
+        } else {
+            array_size = array_values.size();
+        }
     }
 }

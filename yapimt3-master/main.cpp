@@ -87,6 +87,7 @@ void showMenu(ConstTable& alphabet, ConstTable& reservedWords, ConstTable& delim
             case 11: {
                 cout << "Enter file path to scan: ";
                 getline(cin, input);
+                varTable = VarTable("data/variables.txt", 1000); // Очищаем таблицу перед сканированием, даем большой запас чтобы не было ресайза
                 tokenizeFile(input, alphabet, reservedWords, delimiters, varTable);
                 break;
             }
@@ -105,6 +106,7 @@ void showMenu(ConstTable& alphabet, ConstTable& reservedWords, ConstTable& delim
             case 14: {
                 cout << "Enter file path to parse: ";
                 getline(cin, input);
+                varTable = VarTable("data/variables.txt", 1000); // Очищаем таблицу перед парсингом, даем большой запас чтобы не было ресайза
                 vector<Token> tks = tokenizeFile(input, alphabet, reservedWords, delimiters, varTable);
                 SyntaxAnalyzer analyzer(tks, reservedWords, delimiters, varTable);
                 analyzer.parse();
@@ -113,6 +115,7 @@ void showMenu(ConstTable& alphabet, ConstTable& reservedWords, ConstTable& delim
             case 15: {
                 cout << "Enter file path to execute: ";
                 getline(cin, input);
+                varTable = VarTable("data/variables.txt", 1000); // Очищаем таблицу перед выполнением, даем большой запас чтобы не было ресайза
                 vector<Token> tks = tokenizeFile(input, alphabet, reservedWords, delimiters, varTable);
                 SyntaxAnalyzer analyzer(tks, reservedWords, delimiters, varTable);
                 vector<string> poliz = analyzer.parse();
@@ -137,7 +140,7 @@ int main() {
         reservedWords.loadFromFile("config/reserved_words.txt");
         delimiters.loadFromFile("config/delimiters.txt");
 
-        VarTable varTable;
+        VarTable varTable("data/variables.txt", 1000);
         varTable.loadFromFile();
 
         showMenu(alphabet, reservedWords, delimiters, varTable);

@@ -66,13 +66,13 @@ string SyntaxAnalyzer::symToStr(Symbol s) {
 SyntaxAnalyzer::SyntaxAnalyzer(const vector<Token>& tks, const ConstTable& rw, const ConstTable& delims, VarTable& vt)
     : tokens(tks), reservedWords(rw), delimiters(delims), varTable(vt) {
     
-    parseTable.resize(120);
+    parseTable.resize(130);
 
     auto addState = [&](int idx, vector<Symbol> terms, int jump, bool accept, bool stack, bool ret, bool err, Action act = Action::NONE) {
         parseTable[idx] = {terms, jump, accept, stack, ret, err, act};
     };
 
-    int S_StmtList = 3, S_Stmt = 8, S_Type = 19, S_DeclTail = 23;
+    int S_StmtList = 3, S_Stmt = 120, S_Type = 19, S_DeclTail = 23;
     int S_Expr = 33, S_RelOpTail = 36, S_RelOp = 42, S_SimpleExpr = 50;
     int S_AddOpTail = 53, S_AddOp = 60, S_Term = 64, S_MulOpTail = 67;
     int S_Factor = 74, S_ArrayElems = 82, S_ArrayElemsTail = 87;
@@ -89,9 +89,9 @@ SyntaxAnalyzer::SyntaxAnalyzer(const vector<Token>& tks, const ConstTable& rw, c
     addState(7, {Symbol::T_EOF}, 0, false, false, true, true);
 
     // Stmt
-    addState(8, {Symbol::T_INT, Symbol::T_FLOAT}, 10, false, false, false, false);
-    addState(9, {Symbol::T_ID}, 14, false, false, false, false);
-    addState(105, {Symbol::T_READ}, 107, false, false, false, true);
+    addState(120, {Symbol::T_INT, Symbol::T_FLOAT}, 10, false, false, false, false);
+    addState(121, {Symbol::T_ID}, 14, false, false, false, false);
+    addState(122, {Symbol::T_READ}, 107, false, false, false, true);
 
     addState(10, {}, S_Type, false, true, false, true);
     addState(11, {Symbol::T_ID}, 12, true, false, false, true);
@@ -276,10 +276,7 @@ vector<string> SyntaxAnalyzer::parse() {
                 errOut << "[Line " << tokens[i-1].line << ", Col " << tokens[i-1].col << "] Semantic Error: Assignment to undeclared variable '" << idName << "'\n";
                 error = true;
             } else if (attr.is_constant) {
-                // If it's a constant, check if it's the first initialization. Wait, our parser allows assignment to named constant?
-                // Let's just say assignment to NAMED_CONSTANT is error.
                 if (tokens[i-1].type == TokenType::NAMED_CONSTANT) {
-                    // find if it's a declaration: if i-2 is T_INT
                     bool isDecl = (i >= 2 && (tokenToSymbol(tokens[i-2]) == Symbol::T_INT || tokenToSymbol(tokens[i-2]) == Symbol::T_FLOAT));
                     if (!isDecl) {
                         errOut << "[Line " << tokens[i-1].line << ", Col " << tokens[i-1].col << "] Semantic Error: Reassignment of named constant '" << idName << "'\n";
@@ -288,7 +285,6 @@ vector<string> SyntaxAnalyzer::parse() {
                 }
             }
             
-            // type check on RHS for simple case
             if (i + 1 < tokens.size() && tokenToSymbol(tokens[i+1]) == Symbol::T_CONST) {
                 string rhsVal = getTokenString(tokens[i+1]);
                 bool isFloatRhs = (rhsVal.find('.') != string::npos);
@@ -303,7 +299,6 @@ vector<string> SyntaxAnalyzer::parse() {
 
     while (true) {
         if (currentState <= 0 || currentState >= (int)parseTable.size()) break;
-
         StateRow row = parseTable[currentState];
         Symbol token = getSym(ip);
 
@@ -326,12 +321,11 @@ vector<string> SyntaxAnalyzer::parse() {
                 if (token == Symbol::T_SEMI) {
                     ip++;
                     while (!stateStack.empty()) stateStack.pop();
-                    currentState = 3; // return to StmtList
+                    currentState = 3;
                     continue;
                 } else if (token == Symbol::T_INT || token == Symbol::T_FLOAT) {
-                    // Recovered at the start of a new statement without consuming a semicolon
                     while (!stateStack.empty()) stateStack.pop();
-                    currentState = 3; // return to StmtList
+                    currentState = 3;
                     continue;
                 } else {
                     break;

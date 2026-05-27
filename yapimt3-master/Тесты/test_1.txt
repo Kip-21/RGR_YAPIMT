@@ -1,0 +1,4 @@
+int arr[3];
+arr[-5] = 10;
+int x;
+x = arr[10];

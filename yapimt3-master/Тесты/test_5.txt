@@ -1,0 +1,5 @@
+int data[5];
+int idx;
+idx = -10;
+int y;
+y = data[idx];
