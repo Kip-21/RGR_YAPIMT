@@ -26,7 +26,7 @@ struct VarTable {
     std::string filename;
     ConstTable reservedWords;
 
-    VarTable(std::string file = "data/variables.txt", std::size_t initial_size = 7);
+    VarTable(std::string file = "data/variables.txt", std::size_t initial_size = 1009);
 
     std::size_t customHash(const std::string& key) const;
     std::size_t rehash(std::size_t hash, std::size_t attempt) const;

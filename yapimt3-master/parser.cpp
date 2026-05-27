@@ -297,6 +297,31 @@ vector<string> SyntaxAnalyzer::parse() {
                     error = true;
                 }
             }
+        } else if (t == Symbol::T_ID) {
+            bool isDecl = (i > 0 && (tokenToSymbol(tokens[i-1]) == Symbol::T_INT || tokenToSymbol(tokens[i-1]) == Symbol::T_FLOAT));
+            if (!isDecl && i + 1 < tokens.size() && tokenToSymbol(tokens[i+1]) == Symbol::T_LBRACKET) {
+                if (i + 2 < tokens.size() && tokenToSymbol(tokens[i+2]) == Symbol::T_CONST) {
+                    if (i + 3 < tokens.size() && tokenToSymbol(tokens[i+3]) == Symbol::T_RBRACKET) {
+                        string idName = getTokenString(tokens[i]);
+                        LexemeAttributes attr = varTable.getAttributes(idName);
+                        if (attr.type.find("array") == 0) {
+                            string constVal = getTokenString(tokens[i+2]);
+                            if (constVal.find('.') == string::npos) {
+                                try {
+                                    int idx = stoi(constVal);
+                                    if (idx < 0 || (size_t)idx >= attr.array_size) {
+                                        errOut << "[Line " << tokens[i+2].line << ", Col " << tokens[i+2].col << "] Lexical/Syntax Error:\nInvalid array access index.\n";
+                                        error = true;
+                                    }
+                                } catch (const exception& e) {
+                                    cerr << "Error in stoi: constVal = '" << constVal << "', token = " << static_cast<int>(tokens[i+2].type) << ", index = " << tokens[i+2].index << endl;
+                                    throw;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
         }
     }
 
@@ -315,7 +340,14 @@ vector<string> SyntaxAnalyzer::parse() {
             if (row.error) {
                 traceOut << " -> Error (Panic Mode)\n";
                 error = true;
-                string lineCol = (ip < tokens.size()) ? ("[Line " + to_string(tokens[ip].line) + ", Col " + to_string(tokens[ip].col) + "] ") : "[EOF] ";
+                string lineCol;
+                if (ip < tokens.size()) {
+                    lineCol = "[Line " + to_string(tokens[ip].line) + ", Col " + to_string(tokens[ip].col) + "] ";
+                } else if (!tokens.empty()) {
+                    lineCol = "[Line " + to_string(tokens.back().line) + ", Col " + to_string(tokens.back().col) + "] ";
+                } else {
+                    lineCol = "[EOF] ";
+                }
                 errOut << lineCol << "Syntax Error: Unexpected token " << symToStr(token) << "\n";
                 
                 // Panic mode

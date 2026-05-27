@@ -97,33 +97,25 @@ void executePoliz(const vector<string>& poliz, VarTable& varTable) {
                 long long ll = (long long)l;
                 if (token == "+") {
                     if (rl > 0 && ll > INT_MAX - rl) {
-                        cout << "\033[1;33m[RUNTIME WARNING] Integer Overflow (+). Correcting to INT_MAX.\033[0m\n";
-                        runtimeStack.push(to_string(INT_MAX)); continue;
+                        throw runtime_error("Runtime Error: Integer Overflow (+)");
                     } else if (rl < 0 && ll < INT_MIN - rl) {
-                        cout << "\033[1;33m[RUNTIME WARNING] Integer Underflow (+). Correcting to INT_MIN.\033[0m\n";
-                        runtimeStack.push(to_string(INT_MIN)); continue;
+                        throw runtime_error("Runtime Error: Integer Underflow (+)");
                     }
                 } else if (token == "*") {
                     if (rl > 0 && ll > 0 && ll > INT_MAX / rl) {
-                        cout << "\033[1;33m[RUNTIME WARNING] Integer Overflow (*). Correcting to INT_MAX.\033[0m\n";
-                        runtimeStack.push(to_string(INT_MAX)); continue;
+                        throw runtime_error("Runtime Error: Integer Overflow (*)");
                     } else if (rl < 0 && ll < 0 && ll < INT_MAX / rl) {
-                        cout << "\033[1;33m[RUNTIME WARNING] Integer Overflow (*). Correcting to INT_MAX.\033[0m\n";
-                        runtimeStack.push(to_string(INT_MAX)); continue;
+                        throw runtime_error("Runtime Error: Integer Overflow (*)");
                     } else if (rl > 0 && ll < 0 && ll < INT_MIN / rl) {
-                        cout << "\033[1;33m[RUNTIME WARNING] Integer Underflow (*). Correcting to INT_MIN.\033[0m\n";
-                        runtimeStack.push(to_string(INT_MIN)); continue;
+                        throw runtime_error("Runtime Error: Integer Underflow (*)");
                     } else if (rl < 0 && ll > 0 && ll > INT_MIN / rl) {
-                        cout << "\033[1;33m[RUNTIME WARNING] Integer Underflow (*). Correcting to INT_MIN.\033[0m\n";
-                        runtimeStack.push(to_string(INT_MIN)); continue;
+                        throw runtime_error("Runtime Error: Integer Underflow (*)");
                     }
                 } else if (token == "-") {
                     if (rl < 0 && ll > INT_MAX + rl) {
-                        cout << "\033[1;33m[RUNTIME WARNING] Integer Overflow (-). Correcting to INT_MAX.\033[0m\n";
-                        runtimeStack.push(to_string(INT_MAX)); continue;
+                        throw runtime_error("Runtime Error: Integer Overflow (-)");
                     } else if (rl > 0 && ll < INT_MIN + rl) {
-                        cout << "\033[1;33m[RUNTIME WARNING] Integer Underflow (-). Correcting to INT_MIN.\033[0m\n";
-                        runtimeStack.push(to_string(INT_MIN)); continue;
+                        throw runtime_error("Runtime Error: Integer Underflow (-)");
                     }
                 }
             }

@@ -43,7 +43,7 @@ bool IsFloat(const string& s) {
 }
 
 bool IsValidValue(const string& type, const string& value) {
-    if (value == "-") return true;
+    if (value == "-" || value == "") return true;
     if (type == "" || type == "-") return true;
     if (type == "int") return IsInt(value);
     if (type == "float") return IsFloat(value);
